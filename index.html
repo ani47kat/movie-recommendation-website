@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CineMatch — Movie Recommender</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#050508;--surface:#0d0d12;--card:#12121a;--border:#1e1e2a;
+  --gold:#e8b84b;--gold-dim:#7a6030;--cream:#f5ede0;--muted:#55556a;
+  --red:#e05252;
+}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--cream);font-family:'Space Mono',monospace;font-weight:400;min-height:100vh;overflow-x:hidden;}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.5;}
+
+/* HERO */
+header{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative;overflow:hidden;}
+.hero-glow{position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 55%,rgba(232,184,75,0.07) 0%,transparent 65%),radial-gradient(ellipse 40% 30% at 80% 20%,rgba(224,82,82,0.04) 0%,transparent 60%),linear-gradient(180deg,#050508 0%,#08080f 100%);z-index:0;}
+.frame-corner{position:absolute;width:60px;height:60px;border-color:var(--gold);border-style:solid;opacity:0.25;animation:cornerPulse 4s ease-in-out infinite;}
+.fc-tl{top:2rem;left:2rem;border-width:2px 0 0 2px;}
+.fc-tr{top:2rem;right:2rem;border-width:2px 2px 0 0;animation-delay:1s;}
+.fc-bl{bottom:2rem;left:2rem;border-width:0 0 2px 2px;animation-delay:2s;}
+.fc-br{bottom:2rem;right:2rem;border-width:0 2px 2px 0;animation-delay:3s;}
+@keyframes cornerPulse{0%,100%{opacity:0.15}50%{opacity:0.45}}
+.vstrip{position:absolute;top:0;height:100%;width:28px;background:repeating-linear-gradient(180deg,transparent 0px,transparent 22px,rgba(232,184,75,0.08) 22px,rgba(232,184,75,0.08) 38px);}
+.vstrip-l{left:0;}.vstrip-r{right:0;}
+.eyebrow{position:relative;z-index:1;font-size:0.58rem;letter-spacing:0.5em;color:var(--gold);text-transform:uppercase;margin-bottom:1.8rem;animation:fadeUp 0.7s ease both;}
+h1{position:relative;z-index:1;font-family:'Playfair Display',serif;font-size:clamp(3.5rem,11vw,8.5rem);font-weight:900;line-height:0.92;letter-spacing:-0.03em;animation:fadeUp 0.7s 0.12s ease both;}
+h1 .line2{font-style:italic;font-weight:400;color:var(--gold);display:block;font-size:clamp(2.8rem,9vw,7rem);}
+.sub{position:relative;z-index:1;font-size:0.62rem;color:var(--muted);letter-spacing:0.18em;margin-top:1.8rem;animation:fadeUp 0.7s 0.25s ease both;}
+.scroll-hint{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);z-index:1;display:flex;flex-direction:column;align-items:center;gap:0.5rem;color:var(--muted);font-size:0.55rem;letter-spacing:0.35em;text-transform:uppercase;animation:fadeUp 0.7s 0.5s ease both;}
+.sh-line{width:1px;height:44px;background:linear-gradient(to bottom,var(--gold),transparent);animation:shPulse 2s ease-in-out infinite;}
+@keyframes shPulse{0%,100%{opacity:0.25}50%{opacity:1}}
+
+/* SEARCH */
+.search-wrap{max-width:680px;margin:0 auto;padding:5rem 1.5rem 2rem;}
+.sec-label{font-size:0.55rem;letter-spacing:0.45em;text-transform:uppercase;color:var(--gold);margin-bottom:2.5rem;display:flex;align-items:center;gap:1rem;}
+.sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--gold-dim),transparent);}
+.input-box{position:relative;margin-bottom:1.2rem;}
+.movie-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:0;padding:1.1rem 1.4rem;font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:400;color:var(--cream);outline:none;transition:border-color 0.3s,box-shadow 0.3s;letter-spacing:0.01em;}
+.movie-input::placeholder{color:var(--muted);font-style:italic;}
+.movie-input:focus{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-dim),inset 0 0 24px rgba(232,184,75,0.04);}
+.bar{position:absolute;bottom:-1px;left:0;width:0;height:2px;background:var(--gold);transition:width 0.4s ease;}
+.movie-input:focus~.bar{width:100%;}
+.row{display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap;}
+.lbl{font-size:0.6rem;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;}
+.n-select{background:var(--surface);border:1px solid var(--border);color:var(--cream);font-family:'Space Mono',monospace;font-size:0.72rem;padding:0.45rem 0.8rem;outline:none;cursor:pointer;transition:border-color 0.2s;}
+.n-select:focus{border-color:var(--gold);}
+.go-btn{flex:1;min-width:150px;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'Space Mono',monospace;font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;padding:0.85rem 1.8rem;cursor:pointer;position:relative;overflow:hidden;transition:color 0.3s;}
+.go-btn::before{content:'';position:absolute;inset:0;background:var(--gold);transform:translateX(-101%);transition:transform 0.32s ease;z-index:0;}
+.go-btn:hover::before{transform:translateX(0);}
+.go-btn:hover{color:var(--bg);}
+.go-btn span{position:relative;z-index:1;}
+.go-btn:disabled{opacity:0.35;cursor:not-allowed;}
+.go-btn:disabled::before{display:none;}
+.chips{margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.45rem;align-items:center;}
+.chip-label{font-size:0.55rem;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;}
+.chip{font-size:0.6rem;letter-spacing:0.06em;color:var(--muted);border:1px solid var(--border);padding:0.28rem 0.65rem;cursor:pointer;transition:color 0.2s,border-color 0.2s;font-family:'Space Mono',monospace;}
+.chip:hover{color:var(--gold);border-color:var(--gold-dim);}
+
+/* COLD START NOTICE */
+.cold-notice{display:none;margin-top:1.2rem;padding:0.9rem 1.2rem;border:1px solid var(--gold-dim);background:rgba(232,184,75,0.05);font-size:0.62rem;letter-spacing:0.08em;color:var(--gold);line-height:1.8;}
+.cold-notice b{color:var(--cream);}
+
+/* ERROR */
+.err-msg{display:none;margin-top:1rem;padding:0.8rem 1rem;border:1px solid var(--red);background:rgba(224,82,82,0.07);font-size:0.62rem;color:var(--red);letter-spacing:0.08em;line-height:1.6;}
+
+/* LOADER */
+.loader{display:none;flex-direction:column;align-items:center;gap:1.2rem;padding:3rem 2rem;}
+.reel{width:52px;height:52px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loader-txt{font-size:0.58rem;letter-spacing:0.35em;color:var(--muted);text-transform:uppercase;}
+.timer-txt{font-size:0.55rem;letter-spacing:0.2em;color:var(--gold-dim);}
+
+/* RESULTS */
+.results-section{display:none;max-width:680px;margin:0 auto;padding:0 1.5rem 4rem;}
+.results-hdr{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:0.5rem;}
+.results-title{font-family:'Playfair Display',serif;font-size:clamp(1.1rem,3vw,1.6rem);font-weight:400;font-style:italic;color:var(--muted);}
+.results-title strong{color:var(--cream);font-style:normal;font-weight:700;}
+.results-count{font-size:0.58rem;letter-spacing:0.25em;color:var(--gold);text-transform:uppercase;}
+.movie-list{list-style:none;}
+.movie-item{display:flex;align-items:center;gap:1.2rem;padding:1.1rem 0;border-bottom:1px solid var(--border);opacity:0;transform:translateY(14px);animation:slideIn 0.45s ease forwards;transition:background 0.2s;}
+.movie-item:hover{background:rgba(232,184,75,0.03);}
+@keyframes slideIn{to{opacity:1;transform:translateY(0);}}
+.m-num{font-size:0.58rem;letter-spacing:0.1em;color:var(--gold-dim);min-width:26px;font-weight:700;}
+.m-title{flex:1;font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:400;color:var(--cream);letter-spacing:0.01em;}
+.m-link{font-size:0.55rem;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;text-decoration:none;border-bottom:1px solid var(--border);padding-bottom:1px;transition:color 0.2s,border-color 0.2s;white-space:nowrap;}
+.m-link:hover{color:var(--gold);border-color:var(--gold);}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:1.8rem 2rem;text-align:center;font-size:0.55rem;letter-spacing:0.22em;color:var(--muted);text-transform:uppercase;}
+footer span{color:var(--gold-dim);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hero-glow"></div>
+  <div class="vstrip vstrip-l"></div>
+  <div class="vstrip vstrip-r"></div>
+  <div class="frame-corner fc-tl"></div>
+  <div class="frame-corner fc-tr"></div>
+  <div class="frame-corner fc-bl"></div>
+  <div class="frame-corner fc-br"></div>
+  <p class="eyebrow">TF-IDF · Cosine Similarity · Content Filtering</p>
+  <h1>Cine<span class="line2">Match</span></h1>
+  <p class="sub">// movie recommendation engine</p>
+  <div class="scroll-hint">
+    <div class="sh-line"></div>
+    <span>Search</span>
+  </div>
+</header>
+
+<section class="search-wrap">
+  <div class="sec-label">Find Similar Films</div>
+  <div class="input-box">
+    <input type="text" class="movie-input" id="movieInput" placeholder="Enter a film title…" autocomplete="off"/>
+    <div class="bar"></div>
+  </div>
+  <div class="row">
+    <span class="lbl">Results</span>
+    <select class="n-select" id="countSelect">
+      <option value="3">03</option>
+      <option value="5" selected>05</option>
+      <option value="8">08</option>
+      <option value="10">10</option>
+    </select>
+    <button class="go-btn" id="searchBtn" onclick="fetchRecs()">
+      <span>Recommend →</span>
+    </button>
+  </div>
+  <div class="chips">
+    <span class="chip-label">Try:</span>
+    <div class="chip" onclick="pick('The Dark Knight')">The Dark Knight</div>
+    <div class="chip" onclick="pick('Inception')">Inception</div>
+    <div class="chip" onclick="pick('Interstellar')">Interstellar</div>
+    <div class="chip" onclick="pick('The Godfather')">The Godfather</div>
+    <div class="chip" onclick="pick('Pulp Fiction')">Pulp Fiction</div>
+  </div>
+
+  <!-- Shows after 5s — Render cold start warning -->
+  <div class="cold-notice" id="coldNotice">
+    ⏳ <b>Server warm ho raha hai…</b><br>
+    Render free tier pe server thoda so jaata hai. Pehli baar <b>30–50 seconds</b> lag sakte hain.
+    Please wait, automatically ho raha hai.
+  </div>
+
+  <div class="err-msg" id="errMsg"></div>
+</section>
+
+<div class="loader" id="loader">
+  <div class="reel"></div>
+  <p class="loader-txt">Scanning the archive…</p>
+  <p class="timer-txt" id="timerTxt"></p>
+</div>
+
+<section class="results-section" id="resultsSection">
+  <div class="results-hdr">
+    <h2 class="results-title">Because you watched <strong id="queryTitle"></strong></h2>
+    <span class="results-count" id="resultsCount"></span>
+  </div>
+  <ul class="movie-list" id="movieList"></ul>
+</section>
+
+<footer>
+  <span>CineMatch</span> &nbsp;·&nbsp; FastAPI + TF-IDF + Cosine Similarity &nbsp;·&nbsp; Content-Based Filtering
+</footer>
+
+<script>
+  // ✅ Render API
+  const API = 'https://movie-api5.onrender.com';
+
+  document.getElementById('movieInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') fetchRecs();
+  });
+
+  function pick(t) {
+    document.getElementById('movieInput').value = t;
+    document.getElementById('movieInput').focus();
+  }
+
+  // Timer for cold start display
+  let timerInterval = null;
+  function startTimer() {
+    let s = 0;
+    const el = document.getElementById('timerTxt');
+    timerInterval = setInterval(() => {
+      s++;
+      el.textContent = `${s}s elapsed…`;
+      if (s === 5) {
+        // Show cold start warning after 5 seconds
+        document.getElementById('coldNotice').style.display = 'block';
+      }
+    }, 1000);
+  }
+  function stopTimer() {
+    clearInterval(timerInterval);
+    document.getElementById('timerTxt').textContent = '';
+    document.getElementById('coldNotice').style.display = 'none';
+  }
+
+  async function fetchRecs() {
+    const movie  = document.getElementById('movieInput').value.trim();
+    const n      = document.getElementById('countSelect').value;
+    const btn    = document.getElementById('searchBtn');
+    const err    = document.getElementById('errMsg');
+    const loader = document.getElementById('loader');
+    const sec    = document.getElementById('resultsSection');
+
+    if (!movie) { document.getElementById('movieInput').focus(); return; }
+
+    err.style.display   = 'none';
+    sec.style.display   = 'none';
+    loader.style.display = 'flex';
+    btn.disabled = true;
+    startTimer();
+
+    try {
+      // ✅ GET request — URL mein movie name, koi body nahi
+      // FastAPI route: GET /recommend/{movie_name}?n=5
+      const url = `${API}/recommend/${encodeURIComponent(movie)}?n=${n}`;
+
+      const res  = await fetch(url, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || `Server error (${res.status})`);
+      }
+
+      renderResults(data.movie, data.recommendations);
+
+    } catch (e) {
+      let msg = e.message || 'Network error.';
+
+      if (msg === 'Failed to fetch' || msg.includes('NetworkError') || msg.includes('fetch')) {
+        msg = 'API se connect nahi ho paya. Thodi der baad dobara try karo.';
+      } else if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('movie not found')) {
+        msg = `"${movie}" dataset mein nahi mila. Koi aur film try karo.`;
+      }
+
+      err.textContent = '✕  ' + msg;
+      err.style.display = 'block';
+
+    } finally {
+      loader.style.display = 'none';
+      btn.disabled = false;
+      stopTimer();
+    }
+  }
+
+  function renderResults(query, recs) {
+    const sec  = document.getElementById('resultsSection');
+    const list = document.getElementById('movieList');
+
+    document.getElementById('queryTitle').textContent  = query;
+    document.getElementById('resultsCount').textContent =
+      `${recs.length} film${recs.length !== 1 ? 's' : ''}`;
+
+    list.innerHTML = recs.map((title, i) => `
+      <li class="movie-item" style="animation-delay:${i * 75}ms">
+        <span class="m-num">${String(i+1).padStart(2,'0')}</span>
+        <span class="m-title">${esc(title)}</span>
+        <a class="m-link"
+           href="https://www.google.com/search?q=${encodeURIComponent(title+' film')}"
+           target="_blank" rel="noopener">Lookup ↗</a>
+      </li>
+    `).join('');
+
+    sec.style.display = 'block';
+    sec.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
